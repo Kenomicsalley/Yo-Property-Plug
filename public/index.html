@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Yo Property Plug — Admin</title>
+<style>
+  :root {
+    --ink: #14231f;
+    --paper: #f6f4ee;
+    --panel: #ffffff;
+    --line: #dcd6c8;
+    --brass: #a9762c;
+    --brass-deep: #7d5620;
+    --green: #1f4d3c;
+    --green-deep: #163a2d;
+    --muted: #6b6b60;
+    --danger: #a3372c;
+    --radius: 10px;
+    font-family: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  header {
+    background: var(--green-deep);
+    color: #f2ede0;
+    padding: 22px 28px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--brass);
+  }
+  header .brand {
+    font-family: 'Iowan Old Style', Georgia, serif;
+    font-size: 20px;
+    letter-spacing: 0.02em;
+  }
+  header .brand span { color: var(--brass); }
+  header .sub { font-size: 12px; color: #c9c2ae; }
+
+  #gate {
+    max-width: 380px;
+    margin: 14vh auto;
+    padding: 32px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    text-align: center;
+  }
+  #gate h1 { font-family: 'Iowan Old Style', Georgia, serif; font-size: 22px; margin-bottom: 4px; }
+  #gate p { color: var(--muted); font-size: 13px; margin-top: 0; }
+  #gate input {
+    width: 100%; padding: 10px 12px; margin: 14px 0;
+    border: 1px solid var(--line); border-radius: 6px; font-size: 14px;
+  }
+  #gate button, .btn {
+    background: var(--green); color: #fff; border: none;
+    padding: 10px 18px; border-radius: 6px; font-size: 14px; cursor: pointer;
+  }
+  #gate button:hover, .btn:hover { background: var(--green-deep); }
+  #gate .err { color: var(--danger); font-size: 13px; min-height: 18px; }
+
+  main { max-width: 960px; margin: 0 auto; padding: 24px 28px 60px; display: none; }
+  nav.tabs {
+    display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 22px;
+  }
+  nav.tabs button {
+    background: none; border: none; padding: 10px 16px; font-size: 14px;
+    cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  nav.tabs button.active { color: var(--green-deep); border-bottom-color: var(--brass); font-weight: 600; }
+
+  section.tab { display: none; }
+  section.tab.active { display: block; }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 18px 20px; margin-bottom: 16px;
+  }
+  .card h2 { font-family: 'Iowan Old Style', Georgia, serif; font-size: 16px; margin: 0 0 4px; }
+  .card .hint { color: var(--muted); font-size: 12.5px; margin: 0 0 14px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px;
+    background: #eef2ea; color: var(--green-deep); border: 1px solid #cdd9c6;
+  }
+  .pill.unverified { background: #f7ece7; color: var(--danger); border-color: #edd2c8; }
+  .pill.inactive { background: #eee; color: #888; border-color: #ddd; }
+
+  label { display: block; font-size: 12.5px; color: var(--muted); margin: 10px 0 4px; }
+  input[type=text], textarea, select {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px;
+    font-size: 13.5px; font-family: inherit;
+  }
+  textarea { min-height: 90px; resize: vertical; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+  .row-actions { display: flex; gap: 8px; margin-top: 14px; align-items: center; }
+  .msg { font-size: 12.5px; color: var(--green-deep); min-height: 16px; }
+  .msg.err { color: var(--danger); }
+  small.muted { color: var(--muted); }
+  .edit-link { color: var(--brass-deep); cursor: pointer; font-size: 12px; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <h1>Yo Property Plug</h1>
+  <p>Admin access</p>
+  <input id="keyInput" type="text" placeholder="Admin key" autocomplete="off" />
+  <div><button onclick="unlock()">Enter</button></div>
+  <p class="err" id="gateErr"></p>
+</div>
+
+<header id="appHeader" style="display:none">
+  <div>
+    <div class="brand">Yo Property <span>Plug</span></div>
+    <div class="sub">Admin panel</div>
+  </div>
+  <div class="sub" id="whoami"></div>
+</header>
+
+<main id="app">
+  <nav class="tabs">
+    <button class="active" data-tab="contacts">Trusted Contacts</button>
+    <button data-tab="brain">Guardrails &amp; Greeting</button>
+    <button data-tab="handoffs">Handoffs Log</button>
+  </nav>
+
+  <section class="tab active" id="tab-contacts">
+    <div class="card">
+      <h2>Add a trusted contact</h2>
+      <p class="hint">This is what the AI recommends people to — only add people you've actually vetted.</p>
+      <div class="grid2">
+        <div>
+          <label>Name</label>
+          <input type="text" id="c_name" />
+          <label>Profession</label>
+          <select id="c_profession">
+            <option>Agent</option><option>Lawyer</option><option>Valuer</option>
+            <option>Surveyor</option><option>Developer</option><option>Mortgage/Finance</option>
+          </select>
+          <label>WhatsApp phone (country code, no +)</label>
+          <input type="text" id="c_phone" placeholder="234XXXXXXXXXX" />
+        </div>
+        <div>
+          <label>Areas covered (comma separated)</label>
+          <input type="text" id="c_areas" placeholder="Gwarinpa, Jahi, Wuse" />
+          <label>Purpose tags (comma separated)</label>
+          <input type="text" id="c_tags" placeholder="rent, buy, land" />
+          <label>Speciality (one line)</label>
+          <input type="text" id="c_speciality" placeholder="Rentals & residential sales" />
+        </div>
+      </div>
+      <label>Verification notes — what you checked, and when</label>
+      <textarea id="c_notes" placeholder="Verified via ID + 2 client referrals, 14 Aug 2026"></textarea>
+      <div class="row-actions">
+        <label style="margin:0"><input type="checkbox" id="c_verified" style="width:auto" checked /> Mark as verified</label>
+        <button class="btn" onclick="addContact()">Add contact</button>
+        <span class="msg" id="c_msg"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Current contacts</h2>
+      <table id="contactsTable">
+        <thead><tr><th>Name</th><th>Role</th><th>Areas</th><th>Tags</th><th>Status</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="tab" id="tab-brain">
+    <div class="card">
+      <h2>Greeting message</h2>
+      <p class="hint">Sent conceptually as the assistant's opening tone — the AI still adapts wording per conversation.</p>
+      <textarea id="s_greeting"></textarea>
+      <div class="row-actions">
+        <button class="btn" onclick="saveSetting('greeting_message','s_greeting')">Save greeting</button>
+        <span class="msg" id="greeting_msg"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Guardrails / extra instructions</h2>
+      <p class="hint">
+        Appended to the AI's core system prompt on every message, as strict operator rules.
+        Use this to restrict topics, enforce disclaimers, change tone, or add temporary policies —
+        without redeploying code. One instruction per line works well.
+      </p>
+      <textarea id="s_guardrails" style="min-height:160px" placeholder="e.g.
+Never discuss mortgage interest rates in specific numbers - refer to Mortgage/Finance contacts instead.
+Always mention that document verification is essential before any payment for land.
+Keep replies under 5 sentences unless the user asks for detail."></textarea>
+      <div class="row-actions">
+        <button class="btn" onclick="saveSetting('extra_instructions','s_guardrails')">Save guardrails</button>
+        <span class="msg" id="extra_instructions_msg"></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="tab" id="tab-handoffs">
+    <div class="card">
+      <h2>Recent handoffs</h2>
+      <p class="hint">Every time the AI surfaces a contact to a user, it's logged here — your signal for what's converting.</p>
+      <table id="handoffsTable">
+        <thead><tr><th>When</th><th>User</th><th>Contact</th><th>Need</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+let ADMIN_KEY = '';
+
+function unlock() {
+  const key = document.getElementById('keyInput').value.trim();
+  if (!key) return;
+  ADMIN_KEY = key;
+  fetch('/admin/api/settings', { headers: { 'x-admin-key': ADMIN_KEY } })
+    .then(r => {
+      if (!r.ok) throw new Error('bad key');
+      document.getElementById('gate').style.display = 'none';
+      document.getElementById('appHeader').style.display = 'flex';
+      document.getElementById('app').style.display = 'block';
+      sessionStorage.setItem('ypp_admin_key', ADMIN_KEY);
+      loadAll();
+    })
+    .catch(() => { document.getElementById('gateErr').textContent = 'Incorrect key.'; });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = sessionStorage.getItem('ypp_admin_key');
+  if (saved) { document.getElementById('keyInput').value = saved; unlock(); }
+});
+
+document.querySelectorAll('nav.tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('section.tab').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+function api(path, opts = {}) {
+  opts.headers = Object.assign({ 'x-admin-key': ADMIN_KEY, 'Content-Type': 'application/json' }, opts.headers || {});
+  return fetch(path, opts).then(async r => {
+    if (!r.ok) throw new Error((await r.text()) || r.statusText);
+    return r.status === 204 ? null : r.json();
+  });
+}
+
+function loadAll() {
+  loadContacts();
+  loadSettings();
+  loadHandoffs();
+}
+
+function loadContacts() {
+  api('/admin/api/contacts').then(rows => {
+    const tbody = document.querySelector('#contactsTable tbody');
+    tbody.innerHTML = '';
+    rows.forEach(c => {
+      const tr = document.createElement('tr');
+      const statusPill = !c.active
+        ? '<span class="pill inactive">inactive</span>'
+        : c.verified ? '<span class="pill">verified</span>' : '<span class="pill unverified">unverified</span>';
+      tr.innerHTML = `
+        <td>${escapeHtml(c.name)}<br><small class="muted">${escapeHtml(c.phone)}</small></td>
+        <td>${escapeHtml(c.profession)}</td>
+        <td>${(c.areas || []).join(', ')}</td>
+        <td>${(c.purpose_tags || []).join(', ')}</td>
+        <td>${statusPill}</td>
+        <td>
+          <span class="edit-link" onclick="toggleActive(${c.id}, ${!c.active})">${c.active ? 'deactivate' : 'reactivate'}</span>
+          ${!c.verified ? `<br><span class="edit-link" onclick="markVerified(${c.id})">mark verified</span>` : ''}
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+function addContact() {
+  const payload = {
+    name: val('c_name'), profession: val('c_profession'), phone: val('c_phone'),
+    areas: listVal('c_areas'), purpose_tags: listVal('c_tags'),
+    speciality: val('c_speciality'), verification_notes: val('c_notes'),
+    verified: document.getElementById('c_verified').checked,
+  };
+  if (!payload.name || !payload.phone) {
+    setMsg('c_msg', 'Name and phone are required.', true); return;
+  }
+  api('/admin/api/contacts', { method: 'POST', body: JSON.stringify(payload) })
+    .then(() => {
+      setMsg('c_msg', 'Contact added.');
+      ['c_name','c_phone','c_areas','c_tags','c_speciality','c_notes'].forEach(id => document.getElementById(id).value = '');
+      loadContacts();
+    })
+    .catch(e => setMsg('c_msg', 'Failed: ' + e.message, true));
+}
+
+function toggleActive(id, active) {
+  api('/admin/api/contacts/' + id, { method: 'PATCH', body: JSON.stringify({ active }) }).then(loadContacts);
+}
+function markVerified(id) {
+  api('/admin/api/contacts/' + id, { method: 'PATCH', body: JSON.stringify({ verified: true }) }).then(loadContacts);
+}
+
+function loadSettings() {
+  api('/admin/api/settings').then(s => {
+    document.getElementById('s_greeting').value = s.greeting_message || '';
+    document.getElementById('s_guardrails').value = s.extra_instructions || '';
+  });
+}
+
+function saveSetting(key, fieldId) {
+  const value = document.getElementById(fieldId).value;
+  api('/admin/api/settings/' + key, { method: 'PUT', body: JSON.stringify({ value }) })
+    .then(() => setMsg(key + '_msg', 'Saved.'))
+    .catch(e => setMsg(key + '_msg', 'Failed: ' + e.message, true));
+}
+
+function loadHandoffs() {
+  api('/admin/api/handoffs').then(rows => {
+    const tbody = document.querySelector('#handoffsTable tbody');
+    tbody.innerHTML = '';
+    rows.forEach(h => {
+      const tr = document.createElement('tr');
+      const need = h.need_summary ? JSON.stringify(h.need_summary) : '';
+      tr.innerHTML = `
+        <td>${new Date(h.created_at).toLocaleString()}</td>
+        <td>${escapeHtml(h.user_phone)}</td>
+        <td>${h.contact_name ? escapeHtml(h.contact_name) + ' (' + escapeHtml(h.profession) + ')' : '—'}</td>
+        <td><small class="muted">${escapeHtml(need)}</small></td>`;
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+function val(id) { return document.getElementById(id).value.trim(); }
+function listVal(id) { return val(id).split(',').map(s => s.trim()).filter(Boolean); }
+function setMsg(id, text, isErr) {
+  const el = document.getElementById(id);
+  el.textContent = text; el.className = 'msg' + (isErr ? ' err' : '');
+  setTimeout(() => { el.textContent = ''; }, 4000);
+}
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+</script>
+</body>
+</html>
